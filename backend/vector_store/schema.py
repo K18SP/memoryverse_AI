@@ -33,6 +33,7 @@ class DocChunk(BaseModel):
     source_type : str    # pdf | image | docx | markdown | github
     source_file : str    # filename or URL
     date        : str    # YYYY-MM-DD
+    original_file_url: Optional[str] = None
 
     # AI-assigned fields (populated in Block 2 & 3)
     category    : Optional[str] = None
@@ -52,6 +53,7 @@ class DocChunk(BaseModel):
             "source_type": self.source_type,
             "source_file": self.source_file,
             "date"       : self.date,
+            "original_file_url": self.original_file_url,
             "category"   : self.category,
             "entities"   : self.entities,
             "skills"     : self.skills,

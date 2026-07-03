@@ -5,7 +5,7 @@ Ingestion now goes all the way:
 """
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from typing import Optional
 import uuid
 from datetime import datetime
@@ -13,7 +13,7 @@ from datetime import datetime
 from backend.ingestion.router import detect_and_extract
 from backend.embeddings.chunker import chunk_text
 from backend.embeddings.generator import generate_embeddings
-from backend.vector_store.qdrant_client import upsert_chunks
+from backend.vector_store.qdrant_client import upsert_chunks, delete_user_documents
 from backend.vector_store.schema import DocChunk
 from backend.config import get_settings
 from backend.retrieval.rag_chain import rag_query
@@ -25,10 +25,12 @@ from backend.graph.knowledge_graph import (
     add_entities_to_graph,
     get_graph_for_frontend,
     get_node_neighbours,
+    reset_graph,
 )
 
 from backend.features.gap_analyst import analyse_gap
 from backend.features.interview_coach import generate_question, evaluate_answer
+from backend.storage.file_store import save_original_file, resolve_original_file
 
 router = APIRouter()
 
@@ -40,7 +42,9 @@ async def ingest_document(
     user_id   : str                  = Form(...),
     date      : Optional[str]        = Form(None),
 ):
-    settings  = get_settings()
+    settings = get_settings()
+    doc_id = str(uuid.uuid4())
+    original_file_meta = {}
 
     # ── Validate file size ─────────────────────────────────────────────────
     if file:
@@ -52,12 +56,17 @@ async def ingest_document(
                 413,
                 f"File too large: {size_mb:.1f} MB. Max: {settings.max_upload_size_mb} MB",
             )
+        original_file_meta = save_original_file(
+            user_id=user_id,
+            doc_id=doc_id,
+            filename=file.filename or "uploaded_file",
+            raw_bytes=raw,
+        )
         file.file = io.BytesIO(raw)
 
     # ── Step 1: Extract text ───────────────────────────────────────────────
     extracted = await detect_and_extract(file=file, github_url=github_url)
 
-    doc_id    = str(uuid.uuid4())
     timestamp = date or datetime.utcnow().strftime("%Y-%m-%d")
 
     # ── Step 2: Chunk the text ─────────────────────────────────────────────
@@ -79,6 +88,7 @@ async def ingest_document(
             "user_id"    : user_id,
             "source_type": extracted["source_type"],
             "source_file": extracted["source_file"],
+            "original_file_url": original_file_meta.get("original_file_url"),
             "date"       : timestamp,
             "char_count" : len(extracted["text"]),
             "chunk_count": len(chunks),
@@ -97,6 +107,7 @@ async def ingest_document(
             source_type = extracted["source_type"],
             source_file = extracted["source_file"],
             date        = timestamp,
+            original_file_url= original_file_meta.get("original_file_url"),
         )
         chunks_with_vectors.append({
             "payload": doc_chunk.to_payload(),
@@ -117,6 +128,7 @@ async def ingest_document(
         "user_id"    : user_id,
         "source_type": extracted["source_type"],
         "source_file": extracted["source_file"],
+        "original_file_url": original_file_meta.get("original_file_url"),
         "date"       : timestamp,
         "char_count" : len(extracted["text"]),
         "chunk_count": len(chunks),
@@ -164,6 +176,34 @@ async def ingestion_health():
         "status": "ok" if all_ok else "degraded",
         "checks": checks,
     }
+
+
+@router.get("/files/{user_id}/{doc_id}/{filename:path}", summary="Open an original uploaded file")
+async def get_original_file(user_id: str, doc_id: str, filename: str):
+    path = resolve_original_file(user_id, doc_id, filename)
+    return FileResponse(
+        path,
+        filename=path.name,
+        media_type="application/octet-stream",
+    )
+
+
+@router.delete("/documents/{user_id}", summary="Clear all indexed documents for a user")
+async def clear_user_documents(user_id: str):
+    """
+    Clears the demo user's vector index and in-memory graph.
+    Useful during hackathon demos when repeated test uploads create duplicates.
+    """
+    try:
+        await delete_user_documents(user_id)
+        reset_graph(user_id)
+    except Exception as e:
+        raise HTTPException(500, f"Could not clear documents: {str(e)}")
+
+    return JSONResponse({
+        "status": "cleared",
+        "user_id": user_id,
+    })
 
 @router.post("/search", summary="Ask a natural language question about your documents")
 async def search_documents(
@@ -233,6 +273,7 @@ async def build_knowledge_graph(user_id: str):
 
     settings = get_settings()
     client   = get_qdrant_client()
+    reset_graph(user_id)
 
     # Fetch all chunks for this user
     results, _ = await client.scroll(
@@ -274,6 +315,7 @@ async def build_knowledge_graph(user_id: str):
             source_type= first_chunk["source_type"],
             date       = first_chunk["date"],
             category   = first_chunk.get("category", ""),
+            original_file_url= first_chunk.get("original_file_url"),
         )
 
         # Extract entities from all chunks of this document

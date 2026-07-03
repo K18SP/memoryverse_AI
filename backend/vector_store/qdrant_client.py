@@ -28,6 +28,10 @@ from qdrant_client.models import (
     SparseVectorParams,
     SparseIndexParams,
     PayloadSchemaType,
+    Filter,
+    FieldCondition,
+    MatchValue,
+    FilterSelector,
 )
 from qdrant_client.models import PointStruct
 from functools import lru_cache
@@ -129,3 +133,24 @@ async def upsert_chunks(chunks_with_vectors: list[dict]) -> int:
     )
 
     return len(points)
+
+
+async def delete_user_documents(user_id: str) -> None:
+    """Delete all indexed chunks for a user from Qdrant."""
+    settings = get_settings()
+    client = get_qdrant_client()
+
+    await client.delete(
+        collection_name=settings.qdrant_collection,
+        points_selector=FilterSelector(
+            filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="user_id",
+                        match=MatchValue(value=user_id),
+                    )
+                ]
+            )
+        ),
+        wait=True,
+    )

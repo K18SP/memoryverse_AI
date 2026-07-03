@@ -28,6 +28,11 @@ def get_graph(user_id: str) -> nx.DiGraph:
     return _graphs[user_id]
 
 
+def reset_graph(user_id: str) -> None:
+    """Clear a user's graph before a full rebuild."""
+    _graphs[user_id] = nx.DiGraph()
+
+
 def add_document_node(
     user_id    : str,
     doc_id     : str,
@@ -35,6 +40,7 @@ def add_document_node(
     source_type: str,
     date       : str,
     category   : str = "",
+    original_file_url: str | None = None,
 ) -> None:
     """Add a document as a node in the graph."""
     graph = get_graph(user_id)
@@ -46,6 +52,7 @@ def add_document_node(
         source_type= source_type,
         date       = date,
         category   = category,
+        original_file_url= original_file_url,
     )
 
 
@@ -144,6 +151,7 @@ def get_graph_for_frontend(user_id: str) -> dict:
             "type" : node_type,
             "color": color_map.get(node_type, "#94A3B8"),
             "date" : data.get("date", ""),
+            "original_file_url": data.get("original_file_url", ""),
         })
 
     edges = []
