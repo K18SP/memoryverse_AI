@@ -1,4 +1,4 @@
-# MemoryVerse AI — Thought Process & Solution Sheet
+# MemoryVerse AI Thought Process & Solution Sheet
 
 ## The Core Insight
 
