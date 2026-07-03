@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg-primary:    #0D1B2A;
+  --bg-secondary:  #112240;
+  --bg-card:       #1A2F4A;
+  --accent-blue:   #3B82F6;
+  --accent-green:  #10B981;
+  --accent-amber:  #F59E0B;
+  --accent-red:    #EF4444;
+  --accent-purple: #8B5CF6;
+  --accent-cyan:   #06B6D4;
+  --text-primary:  #E2E8F0;
+  --text-secondary:#94A3B8;
+  --border:        #1E3A5F;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.btn-primary {
+  background: var(--accent-blue);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover { background: #2563EB; transform: translateY(-1px); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-skill        { background: #064E3B; color: var(--accent-green); }
+.badge-tool         { background: #451A03; color: var(--accent-amber); }
+.badge-organization { background: #450A0A; color: var(--accent-red); }
+.badge-role         { background: #2E1065; color: var(--accent-purple); }
+.badge-topic        { background: #0C4A6E; color: var(--accent-cyan); }
+.badge-document     { background: #1E3A5F; color: var(--accent-blue); }
+.badge-github       { background: #1E3A5F; color: var(--accent-blue); }
+.badge-pdf          { background: #450A0A; color: var(--accent-red); }
