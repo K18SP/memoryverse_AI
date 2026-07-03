@@ -40,14 +40,22 @@ export const buildGraph    = (userId) => API.post(`/graph/${userId}/build`);
 export const getGraph      = (userId) => API.get(`/graph/${userId}`);
 export const getNodeDetails= (userId, nodeId) =>
   API.get(`/graph/${userId}/node/${encodeURIComponent(nodeId)}`);
+export const clearDocuments = (userId) => API.delete(`/documents/${userId}`);
 
 // ── Timeline ───────────────────────────────────────────────────────────────
 export const getTimeline = async (userId) => {
   // Fetch graph data and filter to document nodes only
   // sorted chronologically for the timeline view
   const res = await getGraph(userId);
+  const seen = new Set();
   const docs = res.data.nodes
     .filter(n => n.type === 'document')
+    .filter(n => {
+      const key = `${n.label || n.id}-${n.date || ''}`.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
     .sort((a, b) => (a.date > b.date ? 1 : -1));
   return { data: { documents: docs } };
 };

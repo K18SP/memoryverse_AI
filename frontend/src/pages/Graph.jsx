@@ -2,7 +2,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { getGraph, getNodeDetails, buildGraph } from '../api';
 import { USER_ID } from '../App';
-import { RefreshCw, } from 'lucide-react';
+import { ExternalLink, Network, RefreshCw } from 'lucide-react';
+
+const LEGEND_ITEMS = [
+  { type: 'Document', color: '#3B82F6', description: 'Uploaded file or link' },
+  { type: 'Skill', color: '#10B981', description: 'Capability proven by evidence' },
+  { type: 'Tool', color: '#F59E0B', description: 'Software, library, or platform' },
+  { type: 'Organization', color: '#EF4444', description: 'Company, college, issuer' },
+  { type: 'Role', color: '#8B5CF6', description: 'Position or career path' },
+  { type: 'Topic', color: '#06B6D4', description: 'Domain or subject area' },
+];
 
 export default function Graph() {
   const svgRef             = useRef(null);
@@ -145,9 +154,15 @@ export default function Graph() {
 
       {/* ── Header ────────────────────────────────────────────────── */}
       <div style={{ display:'flex', justifyContent:'space-between',
-        alignItems:'center', marginBottom:'24px' }}>
+        alignItems:'flex-start', gap:'16px', marginBottom:'24px' }}>
         <div>
-          <h1 style={{ fontSize:'28px', fontWeight:700 }}>Knowledge Graph</h1>
+          <div style={{ display:'inline-flex', gap:'8px', alignItems:'center',
+            color:'#10B981', fontSize:'12px', fontWeight:700,
+            textTransform:'uppercase', letterSpacing:'0.8px', marginBottom:'10px' }}>
+            <Network size={15} />
+            Relationship engine
+          </div>
+          <h1 style={{ fontSize:'32px', fontWeight:800 }}>Knowledge Graph</h1>
           {graphData && (
             <p style={{ color:'#94A3B8', fontSize:'14px', marginTop:'4px' }}>
               {graphData.node_count} nodes · {graphData.edge_count} edges
@@ -191,6 +206,65 @@ export default function Graph() {
           ) : (
             <svg ref={svgRef} width="100%" height="100%" />
           )}
+          {graphData && graphData.node_count > 0 && (
+            <div style={{
+              position:'absolute',
+              left:'16px',
+              bottom:'16px',
+              width:'250px',
+              background:'rgba(13, 27, 42, 0.86)',
+              border:'1px solid #1E3A5F',
+              borderRadius:'10px',
+              padding:'14px',
+              backdropFilter:'blur(10px)',
+              boxShadow:'0 14px 36px rgba(0,0,0,0.22)',
+            }}>
+              <div style={{
+                display:'flex',
+                alignItems:'center',
+                gap:'8px',
+                color:'#E2E8F0',
+                fontSize:'13px',
+                fontWeight:700,
+                marginBottom:'10px',
+              }}>
+                <Network size={14} color="#3B82F6" />
+                Legend
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
+                {LEGEND_ITEMS.map(item => (
+                  <div key={item.type} style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+                    <span style={{
+                      width:'11px',
+                      height:'11px',
+                      borderRadius:'50%',
+                      background:item.color + '33',
+                      border:`2px solid ${item.color}`,
+                      flexShrink:0,
+                    }} />
+                    <div style={{ minWidth:0 }}>
+                      <div style={{ fontSize:'12px', color:'#E2E8F0', fontWeight:600 }}>
+                        {item.type}
+                      </div>
+                      <div style={{ fontSize:'10px', color:'#64748B', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                        {item.description}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{
+                marginTop:'12px',
+                paddingTop:'10px',
+                borderTop:'1px solid #1E3A5F',
+                color:'#94A3B8',
+                fontSize:'11px',
+                lineHeight:1.45,
+              }}>
+                Click a node to inspect connections. Drag nodes to rearrange the graph.
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ── Node Detail Panel ───────────────────────────────────── */}
@@ -203,6 +277,25 @@ export default function Graph() {
             <span className={`badge badge-${selected.node?.node_type}`}>
               {selected.node?.node_type}
             </span>
+
+            {selected.node?.original_file_url && (
+              <a
+                href={selected.node.original_file_url}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  marginTop:'12px',
+                  display:'inline-flex',
+                  alignItems:'center',
+                  gap:'6px',
+                  color:'#3B82F6',
+                  fontSize:'12px',
+                  textDecoration:'none',
+                }}
+              >
+                <ExternalLink size={13}/> View Original
+              </a>
+            )}
 
             {selected.successors?.length > 0 && (
               <div style={{ marginTop:'16px' }}>

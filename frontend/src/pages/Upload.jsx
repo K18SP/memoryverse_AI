@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { ingestFile, ingestGithub, buildGraph } from '../api';
 import { USER_ID } from '../App';
-import { Upload as UploadIcon, Github, Loader } from 'lucide-react';
+import { Upload as UploadIcon, Github, Loader, Database, Network } from 'lucide-react';
 
 const ACCEPTED = {
   'application/pdf'      : ['.pdf'],
@@ -24,23 +24,23 @@ export default function Upload() {
 
   const processFile = async (file) => {
     setLoading(true);
-    addLog(`📄 Processing: ${file.name}`, 'info');
+    addLog(`Processing: ${file.name}`, 'info');
 
     try {
-      addLog('⟳ Extracting text...', 'info');
+      addLog('Extracting text...', 'info');
       const res = await ingestFile(file, USER_ID);
-      addLog(`✓ Extracted ${res.data.char_count} characters`, 'success');
-      addLog(`✓ Created ${res.data.chunk_count} chunks`, 'success');
-      addLog(`✓ Generated embeddings & indexed ${res.data.upserted} vectors`, 'success');
-      addLog(`✓ Document stored: ${res.data.doc_id}`, 'success');
+      addLog(`Done: extracted ${res.data.char_count} characters`, 'success');
+      addLog(`Done: created ${res.data.chunk_count} chunks`, 'success');
+      addLog(`Done: generated embeddings and indexed ${res.data.upserted} vectors`, 'success');
+      addLog(`Done: document stored as ${res.data.doc_id}`, 'success');
 
       // Auto-build graph after each upload
-      addLog('⟳ Updating knowledge graph...', 'info');
+      addLog('Updating knowledge graph...', 'info');
       const graphRes = await buildGraph(USER_ID);
-      addLog(`✓ Graph updated: ${graphRes.data.graph_summary.nodes} nodes, ${graphRes.data.graph_summary.edges} edges`, 'success');
+      addLog(`Done: graph updated with ${graphRes.data.graph_summary.nodes} nodes and ${graphRes.data.graph_summary.edges} edges`, 'success');
 
     } catch (e) {
-      addLog(`✗ Failed: ${e.response?.data?.detail || e.message}`, 'error');
+      addLog(`Failed: ${e.response?.data?.detail || e.message}`, 'error');
     } finally {
       setLoading(false);
     }
@@ -49,21 +49,21 @@ export default function Upload() {
   const processGithub = async () => {
     if (!githubUrl.trim()) return;
     setLoading(true);
-    addLog(`🐙 Fetching GitHub: ${githubUrl}`, 'info');
+    addLog(`Fetching GitHub: ${githubUrl}`, 'info');
 
     try {
-      addLog('⟳ Calling GitHub API...', 'info');
+      addLog('Calling GitHub API...', 'info');
       const res = await ingestGithub(githubUrl, USER_ID);
-      addLog(`✓ Fetched ${res.data.char_count} characters`, 'success');
-      addLog(`✓ Created ${res.data.chunk_count} chunks`, 'success');
-      addLog(`✓ Indexed ${res.data.upserted} vectors`, 'success');
+      addLog(`Done: fetched ${res.data.char_count} characters`, 'success');
+      addLog(`Done: created ${res.data.chunk_count} chunks`, 'success');
+      addLog(`Done: indexed ${res.data.upserted} vectors`, 'success');
 
-      addLog('⟳ Updating knowledge graph...', 'info');
+      addLog('Updating knowledge graph...', 'info');
       const graphRes = await buildGraph(USER_ID);
-      addLog(`✓ Graph: ${graphRes.data.graph_summary.nodes} nodes`, 'success');
+      addLog(`Done: graph now has ${graphRes.data.graph_summary.nodes} nodes`, 'success');
       setGithubUrl('');
     } catch (e) {
-      addLog(`✗ Failed: ${e.response?.data?.detail || e.message}`, 'error');
+      addLog(`Failed: ${e.response?.data?.detail || e.message}`, 'error');
     } finally {
       setLoading(false);
     }
@@ -80,20 +80,42 @@ export default function Upload() {
   const logColor = { info:'#94A3B8', success:'#10B981', error:'#EF4444' };
 
   return (
-    <div style={{ maxWidth:'700px', margin:'0 auto' }}>
-      <h1 style={{ fontSize:'28px', fontWeight:700, marginBottom:'8px' }}>
-        Upload Documents
-      </h1>
-      <p style={{ color:'#94A3B8', marginBottom:'32px' }}>
-        Add your certificates, resumes, projects, or GitHub repos.
-      </p>
+    <div style={{ maxWidth:'860px', margin:'0 auto' }}>
+      <div style={{ marginBottom:'28px' }}>
+        <div style={{ display:'inline-flex', gap:'8px', alignItems:'center',
+          color:'#3B82F6', fontSize:'12px', fontWeight:700,
+          textTransform:'uppercase', letterSpacing:'0.8px', marginBottom:'10px' }}>
+          <Database size={15} />
+          Evidence ingestion
+        </div>
+        <h1 style={{ fontSize:'34px', fontWeight:800, marginBottom:'8px' }}>
+          Upload Documents
+        </h1>
+        <p style={{ color:'#94A3B8', fontSize:'16px', lineHeight:1.6 }}>
+          Add certificates, resumes, reports, and GitHub repositories. MemoryVerse extracts text, preserves originals, indexes vectors, and updates your graph.
+        </p>
+      </div>
+
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'12px', marginBottom:'24px' }}>
+        {[
+          ['Extract', 'PDF/OCR/text parsing', UploadIcon, '#3B82F6'],
+          ['Embed', 'Semantic vector index', Database, '#10B981'],
+          ['Connect', 'Knowledge graph update', Network, '#F59E0B'],
+        ].map(([title, detail, Icon, color]) => (
+          <div key={title} className="card interactive-card" style={{ padding:'16px' }}>
+            <Icon size={18} color={color} style={{ marginBottom:'10px' }} />
+            <div style={{ fontSize:'13px', fontWeight:700, marginBottom:'4px' }}>{title}</div>
+            <div style={{ color:'#94A3B8', fontSize:'12px' }}>{detail}</div>
+          </div>
+        ))}
+      </div>
 
       {/* ── Dropzone ────────────────────────────────────────────────── */}
-      <div {...getRootProps()} style={{
+      <div {...getRootProps()} className="interactive-card" style={{
         border: `2px dashed ${isDragActive ? '#3B82F6' : '#1E3A5F'}`,
         borderRadius: '12px', padding: '48px',
         textAlign: 'center', cursor: loading ? 'not-allowed' : 'pointer',
-        background: isDragActive ? '#1E3A5F22' : 'transparent',
+        background: isDragActive ? '#1E3A5F44' : '#112240',
         transition: 'all 0.2s', marginBottom: '24px',
       }}>
         <input {...getInputProps()} />
@@ -103,12 +125,12 @@ export default function Upload() {
           {isDragActive ? 'Drop files here' : 'Drag & drop files here'}
         </p>
         <p style={{ color:'#64748B', fontSize:'13px' }}>
-          PDF, DOCX, PNG, JPG, MD, TXT — max 20MB each
+          PDF, DOCX, PNG, JPG, MD, TXT - max 20MB each
         </p>
       </div>
 
       {/* ── GitHub URL ──────────────────────────────────────────────── */}
-      <div className="card" style={{ marginBottom:'24px' }}>
+      <div className="card interactive-card" style={{ marginBottom:'24px' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'8px',
           marginBottom:'16px' }}>
           <Github size={18} color="#94A3B8" />
@@ -141,7 +163,7 @@ export default function Upload() {
             textTransform:'uppercase', letterSpacing:'1px' }}>
             Processing Log
           </h3>
-          <div style={{ fontFamily:'JetBrains Mono, monospace', fontSize:'12px' }}>
+        <div style={{ fontFamily:'JetBrains Mono, monospace', fontSize:'12px' }}>
             {logs.map((log, i) => (
               <div key={i} style={{
                 display:'flex', gap:'12px', padding:'4px 0',
