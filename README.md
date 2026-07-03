@@ -1,4 +1,4 @@
-# MemoryVerse AI — Digital Identity System
+# MemoryVerse AI Digital Identity System
 ### MemoryVerse AI '26 Hackathon Submission
 
 > *"I never have to search through folders again."*
